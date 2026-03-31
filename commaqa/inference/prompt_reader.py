@@ -13,7 +13,10 @@ def get_tokenizer(model_name):
     from transformers import AutoTokenizer
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    return AutoTokenizer.from_pretrained(model_name)
+    try:
+        return AutoTokenizer.from_pretrained(model_name)
+    except:
+        return AutoTokenizer.from_pretrained("gpt2")
 
 
 def read_prompt(

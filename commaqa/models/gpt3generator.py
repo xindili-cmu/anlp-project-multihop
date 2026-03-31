@@ -3,7 +3,7 @@ import time
 import os
 from functools import lru_cache
 
-import openai
+#import openai
 from diskcache import Cache
 from commaqa.inference.prompt_reader import fit_prompt_into_given_limit
 

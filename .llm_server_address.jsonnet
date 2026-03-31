@@ -1,4 +1,1 @@
-{
-    "host": "http://localhost",
-    "port": 8010,
-}
+{"host": "http://localhost", "port": "8000"}

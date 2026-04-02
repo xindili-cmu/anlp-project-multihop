@@ -303,3 +303,113 @@ If you find this work useful, consider citing it:
 ```
 # anlp-project-multihop
 # anlp-project-multihop
+
+# Reproduction: IRCoT with Llama 3.1 8B on HotpotQA (11-711 Course Project)
+
+This section documents our reproduction of IRCoT as part of the 11-711 Advanced NLP course project at CMU. We substitute the original GPT-3 (code-davinci-002, now deprecated) with Llama 3.1 8B accessed via AWS Bedrock, and replace the Elasticsearch-based retriever with a lightweight BM25 retriever built with `rank-bm25`.
+
+## Results
+
+| Configuration | Dataset | EM | F1 |
+|---|---|---|---|
+| Llama 3.1 8B (ours) | HotpotQA dev, 500 samples | 21.8 | 33.6 |
+| GPT-3 code-davinci-002 (paper) | HotpotQA test, 500 samples | 49.3 | 60.7 |
+
+## New Files
+
+`llm_server/bedrock_server.py` — FastAPI server wrapping AWS Bedrock calls to Llama 3.1 8B, exposing the same `/generate` interface as the original `llm_server/serve.py`.
+
+`retriever_server/hotpotqa_retriever.py` — BM25 retriever using `rank-bm25`, loading all paragraphs from HotpotQA dev.json and serving on port 8001. Replaces the Elasticsearch-based retriever for this configuration.
+
+## Prerequisites
+
+- Access to PSC Bridges-2
+- AWS account with Bedrock access enabled for `us.meta.llama3-1-8b-instruct-v1:0`
+- Python 3.8
+
+## PSC Environment Setup
+
+Run once after logging in:
+```bash
+ssh ACCOUNT_ID@bridges2.psc.edu
+interact --partition GPU-shared --gres=gpu:v100-32:1 -t 8:00:00
+
+cd /jet/home/$USER
+module load python/3.8.6
+python3 -m venv 11711-project-psc
+source 11711-project-psc/bin/activate
+
+cd /ocean/projects/cis250260p/$USER/ircot
+pip install -r requirements.txt
+pip install boto3 rank-bm25
+python -m spacy download en_core_web_sm
+python -c "import nltk; nltk.download('stopwords')"
+```
+
+## Data Setup
+```bash
+./download/processed_data.sh
+./download/raw_data.sh
+./download/official_eval.sh
+```
+
+HotpotQA dev.json should be at `downloads/hotpotqa/dev.json`.
+
+## Running
+
+Every session requires requesting a compute node first:
+```bash
+ssh ACCOUNT_ID@bridges2.psc.edu
+interact --partition GPU-shared --gres=gpu:v100-32:1 -t 8:00:00
+```
+
+Open three terminal windows, all SSH'd into the same compute node, and activate the environment in each:
+```bash
+ssh v010  # replace with your assigned node
+source /jet/home/$USER/11711-project-psc/bin/activate
+cd /ocean/projects/cis250260p/$USER/ircot
+```
+
+**Terminal 1 — Retriever Server (port 8001):**
+```bash
+python retriever_server/hotpotqa_retriever.py
+```
+
+Wait for `Index built: 73700 paragraphs` before proceeding.
+
+**Terminal 2 — LLM Server (port 8000):**
+```bash
+AWS_ACCESS_KEY_ID=your_key_id \
+AWS_SECRET_ACCESS_KEY=your_secret_key \
+AWS_DEFAULT_REGION=us-east-1 \
+python llm_server/bedrock_server.py
+```
+
+**Terminal 3 — Run Inference:**
+```bash
+RETRIEVER_HOST=http://localhost RETRIEVER_PORT=8001 \
+LLM_SERVER_HOST=http://localhost LLM_SERVER_PORT=8000 \
+python -m commaqa.inference.configurable_inference \
+  --config instantiated_configs/ircot_qa_llama_hotpotqa____prompt_set_1___bm25_retrieval_count__2___distractor_count__1.jsonnet \
+  --input processed_data/hotpotqa/dev_subsampled.jsonl \
+  --output predictions/ircot_qa_llama_hotpotqa____prompt_set_1___bm25_retrieval_count__2___distractor_count__1/prediction__hotpotqa_to_hotpotqa__dev_subsampled.json
+```
+
+Expected runtime: approximately 35 minutes for 500 samples.
+
+**Evaluate:**
+```bash
+python evaluate.py \
+  instantiated_configs/ircot_qa_llama_hotpotqa____prompt_set_1___bm25_retrieval_count__2___distractor_count__1.jsonnet \
+  processed_data/hotpotqa/dev_subsampled.jsonl
+```
+
+## Troubleshooting
+
+**`LLM Generation request failed!`:** Check Terminal 2 for the actual error. Most common cause is missing AWS credentials.
+
+**`NoCredentialsError`:** Pass AWS credentials explicitly as environment variables when starting `bedrock_server.py`.
+
+**`nltk stopwords not found`:** Run `python -c "import nltk; nltk.download('stopwords')"` before inference.
+
+**Retriever returns empty results:** Confirm `downloads/hotpotqa/dev.json` exists and Terminal 1 shows `Index built: 73700 paragraphs`.

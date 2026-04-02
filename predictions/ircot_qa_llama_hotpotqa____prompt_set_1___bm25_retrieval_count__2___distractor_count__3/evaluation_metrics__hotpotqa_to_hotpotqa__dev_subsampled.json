@@ -1,12 +1,12 @@
 {
-    "em": 0.12,
-    "f1": 0.192,
-    "precision": 0.183,
-    "recall": 0.429,
+    "em": 0.218,
+    "f1": 0.336,
+    "precision": 0.319,
+    "recall": 0.618,
     "count": 500,
-    "sp_em": 0.12,
-    "sp_f1": 0.12,
-    "sp_precision": 0.12,
-    "sp_recall": 0.12,
-    "git_hash": "3c1820f698eea5eeddb4fba3c56b64c961e063e4"
+    "sp_em": 0.218,
+    "sp_f1": 0.219,
+    "sp_precision": 0.218,
+    "sp_recall": 0.22,
+    "git_hash": "11ba72982918286f4bc602fb0cd87b5e2a145860"
 }

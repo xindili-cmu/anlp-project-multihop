@@ -301,8 +301,6 @@ If you find this work useful, consider citing it:
     pages = "10014--10037",
 }
 ```
-# anlp-project-multihop
-# anlp-project-multihop
 
 # Reproduction: IRCoT with Llama 3.1 8B on HotpotQA (11-711 Course Project)
 

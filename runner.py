@@ -7,7 +7,7 @@ import subprocess
 def main():
     parser = argparse.ArgumentParser(description="Wrapper around run.py to make experimentation easier.")
     parser.add_argument("system", type=str, choices=("ircot", "ircot_qa", "nor_qa", "oner", "oner_qa"))
-    parser.add_argument("model", type=str, choices=("codex", "flan-t5-xxl", "flan-t5-xl", "flan-t5-large", "flan-t5-base", "none"))
+    parser.add_argument("model", type=str, choices=("codex", "flan-t5-xxl", "flan-t5-xl", "flan-t5-large", "flan-t5-base", "none", "llama"))
     all_datasets = ["hotpotqa", "2wikimultihopqa", "musique", "iirc"]
     all_datasets += ["_to_".join([dataset_a, dataset_b]) for dataset_a in all_datasets for dataset_b in all_datasets]
     parser.add_argument("dataset", type=str, choices=all_datasets)
@@ -63,7 +63,7 @@ def main():
     instantiation_scheme = args.system
 
     run_command_array = [
-        f"python run.py {args.command} {experiment_name} --instantiation_scheme {instantiation_scheme} --prompt_set {args.prompt_set}",
+        f"python3 run.py {args.command} {experiment_name} --instantiation_scheme {instantiation_scheme} --prompt_set {args.prompt_set}",
     ]
 
     if args.command in ("write", "predict", "evaluate", "print", "summarize") and args.best:
